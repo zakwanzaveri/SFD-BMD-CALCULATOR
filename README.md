@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# SFD & BMD Calculator
 
-## Getting Started
+Interactive shear force diagram (SFD) and bending moment diagram (BMD) calculator for beams — built for civil and structural engineers.
 
-First, run the development server:
+Everything runs in the browser: no server, no API, no telemetry. The analysis engine is a self-contained statics solver.
+
+## Features
+
+- **Beam types** — simply supported, cantilever (clamped left or right), and overhanging.
+- **Loads** — point loads (with any inclination from horizontal), uniformly distributed loads (UDL), triangular/varying loads (UVL), and concentrated moments. Loads can be placed anywhere on the span.
+- **Live diagrams** — the beam loading sketch, the SFD and the BMD are drawn from the same sampled solution and share one horizontal scale.
+- **Results table** — support reactions and the extreme shear and moment values, each with the abscissa where it occurs.
+- **Metric / imperial units** — switch at any time; every value is converted, not just relabelled.
+- **Light / dark / system theme** — persisted in `localStorage`, applied before first paint to avoid a flash.
+
+## Sign conventions
+
+- x increases to the right; y is upwards.
+- Downward loads are positive magnitudes.
+- Bending moment is **sagging-positive** (tension on the underside); hogging moments are negative.
+- Applied concentrated moments are **counter-clockwise positive**; the fixed-end reaction moment is reported with the same convention.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Script          | Purpose                                    |
+| --------------- | ------------------------------------------ |
+| `npm run dev`   | Start the dev server                       |
+| `npm run build` | Production build                           |
+| `npm start`     | Serve the production build                 |
+| `npm run lint`  | ESLint                                     |
+| `npm test`      | Unit tests for the analysis engine         |
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Project structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/            # App Router entry points, global styles
+├── components/     # UI and SVG diagram rendering
+└── lib/
+    ├── analysis.js # Statically determinate beam solver (SI units internally)
+    ├── scale.js    # Shared chart geometry and axis tick generation
+    └── units.js    # Unit systems, conversion factors and number formatting
+tests/
+└── analysis.test.js
+```
 
-## Learn More
+The solver works in SI units internally; the display layer converts on the way in and on the way out. `lib/units.js` holds the single source of truth for the conversion factors.
 
-To learn more about Next.js, take a look at the following resources:
+## How the analysis works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`lib/analysis.js` samples the shear and moment functions at every event point (supports, load positions, load extents) and subdivides each span between them. At each sample the value is obtained from the free body to the left of the cut, with one-sided limits used at discontinuities so that a point load produces a step in the shear but not a spurious step in the moment.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`tests/analysis.test.js` covers the classical results — central point load, full-span UDL and UVL, applied couples, overhanging beams, inclined loads, and both cantilever orientations — and asserts that the bending moment is continuous across a clamped end.
 
-## Deploy on Vercel
+## Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · no runtime dependencies beyond the framework.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Disclaimer
+
+This tool is intended for study, checking and preliminary design work. Verify results with a full structural analysis before using them for design.
